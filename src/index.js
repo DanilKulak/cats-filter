@@ -1,9 +1,61 @@
-import axios from "axios";
-axios.defaults.headers.common["x-api-key"] = "live_KEkqERhuLJ3h4kXHvlfN29AFAhkTxdDCpCCWvv4BQDXlzJA3JyLY5n44ZsT5FtRV";
-import { fetchBreeds, fetchCatByBreed } from "./cat-api.js";
+import SlimSelect from "slim-select";
+import * as catApi from "./cat-api.js";
 
-const breeds = await fetchBreeds();
-console.log("Breeds:", breeds);
+document.addEventListener("DOMContentLoaded", () => {
+  const breedSelect = new SlimSelect(".breed-select");
 
-const catInfo = await fetchCatByBreed("yourBreedId");
-console.log("Cat Info:", catInfo);
+  catApi.fetchBreeds()
+    .then(breeds => {
+      hideLoader();
+      hideError();
+      breedSelect.setData(breeds.map(breed => ({ text: breed.name, value: breed.id })));
+      breedSelect.onChange = handleBreedSelectChange;
+    })
+    .catch(() => {
+      hideLoader();
+      showError();
+    });
+
+  function handleBreedSelectChange() {
+    const selectedBreedId = breedSelect.selected();
+    if (selectedBreedId) {
+      showLoader();
+      catApi.fetchCatByBreed(selectedBreedId)
+        .then(catData => {
+          hideLoader();
+          displayCatInfo(catData);
+        })
+        .catch(() => {
+          hideLoader();
+          showError();
+        });
+    }
+  }
+
+  function displayCatInfo(catData) {
+    const catInfoDiv = document.querySelector(".cat-info");
+    catInfoDiv.innerHTML = `
+      <img src="${catData.url}" alt="Cat">
+      <p>Breed: ${catData.breeds[0].name}</p>
+      <p>Description: ${catData.breeds[0].description}</p>
+      <p>Temperament: ${catData.breeds[0].temperament}</p>
+    `;
+    catInfoDiv.style.display = "block";
+  }
+
+  function showLoader() {
+    document.querySelector(".loader").style.display = "block";
+  }
+
+  function hideLoader() {
+    document.querySelector(".loader").style.display = "none";
+  }
+
+  function showError() {
+    document.querySelector(".error").style.display = "block";
+  }
+
+  function hideError() {
+    document.querySelector(".error").style.display = "none";
+  }
+});
