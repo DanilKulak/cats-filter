@@ -1,61 +1,56 @@
-import SlimSelect from "slim-select";
-import * as catApi from "./cat-api.js";
+import { fetchBreeds, fetchCatByBreed, refs } from './cat-api.js';
+import SlimSelect from 'slim-select';
+import 'slim-select/dist/slimselect.css';
+import Notiflix from 'notiflix';
+import "notiflix/dist/notiflix-3.2.6.min.css"
 
-document.addEventListener("DOMContentLoaded", () => {
-  const breedSelect = new SlimSelect(".breed-select");
+fetchBreeds()
+  .then(data => {
+    const option = data
+      .map(cat => {
+        return `<option value="${cat.id}">${cat.name}</option>`;
+      })
+      .join('');
 
-  catApi.fetchBreeds()
-    .then(breeds => {
-      hideLoader();
-      hideError();
-      breedSelect.setData(breeds.map(breed => ({ text: breed.name, value: breed.id })));
-      breedSelect.onChange = handleBreedSelectChange;
-    })
-    .catch(() => {
-      hideLoader();
-      showError();
+    refs.select.innerHTML = option;
+    new SlimSelect({
+      select: refs.select,
     });
+  })
+  .catch(() => Notiflix.Notify.failure(refs.error.textContent));
 
-  function handleBreedSelectChange() {
-    const selectedBreedId = breedSelect.selected();
-    if (selectedBreedId) {
-      showLoader();
-      catApi.fetchCatByBreed(selectedBreedId)
-        .then(catData => {
-          hideLoader();
-          displayCatInfo(catData);
-        })
-        .catch(() => {
-          hideLoader();
-          showError();
-        });
-    }
-  }
+refs.select.addEventListener('change', catInfo);
 
-  function displayCatInfo(catData) {
-    const catInfoDiv = document.querySelector(".cat-info");
-    catInfoDiv.innerHTML = `
-      <img src="${catData.url}" alt="Cat">
-      <p>Breed: ${catData.breeds[0].name}</p>
-      <p>Description: ${catData.breeds[0].description}</p>
-      <p>Temperament: ${catData.breeds[0].temperament}</p>
+function catInfo() {
+  const selectedValue = refs.select.value;
+  const cat = {
+    catImg: '',
+    catTitle: '',
+    catDescr: '',
+    catTemp: '',
+  };
+
+  fetchCatByBreed(selectedValue)
+    .then(({ breeds, url }) => {
+      cat.catImg = url;
+      cat.catTitle = breeds[0].name;
+      cat.catDescr = breeds[0].description;
+      cat.catTemp = breeds[0].temperament;
+      refs.catInfo.innerHTML = createMarkup(cat);
+    })
+    .catch(() => Notiflix.Notify.failure(refs.error.textContent));
+}
+
+function createMarkup({ catImg, catTitle, catDescr, catTemp }) {
+  return `
+    <img class="cat-img" src="${catImg}" alt="${catTitle}">
+    <div class="cat-info-block">
+      <h2 class="cat-title">${catTitle}</h2>
+      <p class="cat-descr">${catDescr}</p>
+      <p class="cat-temp">
+        <b class="cat-temp-title">Temperament: </b>
+        ${catTemp};
+      </p>
+    </div>
     `;
-    catInfoDiv.style.display = "block";
-  }
-
-  function showLoader() {
-    document.querySelector(".loader").style.display = "block";
-  }
-
-  function hideLoader() {
-    document.querySelector(".loader").style.display = "none";
-  }
-
-  function showError() {
-    document.querySelector(".error").style.display = "block";
-  }
-
-  function hideError() {
-    document.querySelector(".error").style.display = "none";
-  }
-});
+}

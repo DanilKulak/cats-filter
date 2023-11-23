@@ -1,17 +1,58 @@
-import axios from "axios";
+import axios from 'axios';
+import Notiflix from 'notiflix';
+import "notiflix/dist/notiflix-3.2.6.min.css"
 
-axios.defaults.headers.common["x-api-key"] = "live_KEkqERhuLJ3h4kXHvlfN29AFAhkTxdDCpCCWvv4BQDXlzJA3JyLY5n44ZsT5FtRV";
+export const refs = {
+  select: document.querySelector('.breed-select'),
+  loader: document.querySelector('.loader'),
+  error: document.querySelector('.error'),
+  catInfo: document.querySelector('.cat-info'),
+};
+
+
+axios.defaults.headers.common['x-api-key'] =
+  'live_KEkqERhuLJ3h4kXHvlfN29AFAhkTxdDCpCCWvv4BQDXlzJA3JyLY5n44ZsT5FtRV';
+
+const BASE_URL = 'https://api.thecatapi.com/v1';
 
 export function fetchBreeds() {
-  return axios.get("https://api.thecatapi.com/v1/breeds")
-    .then(response => response.data)
-    .catch(error => Promise.reject(error));
+  showLoader();
+  return axios
+    .get(`${BASE_URL}/breeds`)
+    .then(response => {
+      hideLoader();
+      return response.data;
+    })
+    .catch(() => {
+      Notiflix.Notify.failure(refs.error.textContent)
+      hideLoader();
+    });
 }
 
 export function fetchCatByBreed(breedId) {
-  const url = `https://api.thecatapi.com/v1/images/search?breed_ids=${breedId}`;
-  return axios.get(url)
-    .then(response => response.data[0])
-    .catch(error => Promise.reject(error));
+  showLoader();
+  return axios
+    .get(`${BASE_URL}/images/search?breed_ids=${breedId}`)
+    .then(response => {
+      hideLoader();
+      return response.data[0];
+    })
+    .catch(() => {
+      Notiflix.Notify.failure(refs.error.textContent)
+      hideLoader();
+    });
 }
 
+function hideLoader() {
+  refs.loader.classList.add("hidden");
+}
+
+function showLoader() {
+  refs.loader.classList.remove("hidden");
+
+}
+
+
+
+
+// live_KEkqERhuLJ3h4kXHvlfN29AFAhkTxdDCpCCWvv4BQDXlzJA3JyLY5n44ZsT5FtRV 
